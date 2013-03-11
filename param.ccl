@@ -6,7 +6,7 @@ BOOLEAN verbose "Output debug messages?" STEERABLE=always
 
 BOOLEAN per_thread_statistics "Collect statistics per thread (instead of per process)" STEERABLE=recover
 {
-} "yes"
+} "no"
 
 BOOLEAN use_multiplexing "Use multiplexing to gather more, but less accurate information" STEERABLE=recover
 {
@@ -45,3 +45,10 @@ STRING events_memory "PAPI evens for memory accesses" STEERABLE=recover
 {
   "" :: ""
 } "PAPI_LD_INS PAPI_SR_INS PAPI_MEM_RCY PAPI_MEM_WCY"
+
+
+
+INT dgemm_N "Matrix size; mem = 32 N^2 bytes, cpu = 2 N^3 flop"
+{
+  1:* :: "N=2000 requires 128 Mbyte and 16 Gflop (per CPU); N=5000 requires 800 Mbyte and 250 Gflop (per process)"
+} 2000
