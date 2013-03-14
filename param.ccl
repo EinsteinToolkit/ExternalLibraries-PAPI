@@ -6,7 +6,7 @@ BOOLEAN verbose "Output debug messages?" STEERABLE=always
 
 BOOLEAN per_thread_statistics "Collect statistics per thread (instead of per process)" STEERABLE=recover
 {
-} "no"
+} "yes"
 
 BOOLEAN use_multiplexing "Use multiplexing to gather more, but less accurate information" STEERABLE=recover
 {

@@ -6,6 +6,12 @@
 #include <time.h>
 #include <sys/time.h>
 
+#ifdef _OPENMP
+#  include <omp.h>
+#else
+static int omp_get_num_threads(void) { return 1; }
+#endif
+
 
 
 static double get_time(void)
@@ -51,7 +57,7 @@ static void dgemm(const ptrdiff_t m, const ptrdiff_t n, const ptrdiff_t l,
 
 
 
-/* "Use" a */
+/* "Use" a matrix */
 static CCTK_REAL dmatuse(const ptrdiff_t m, const ptrdiff_t n,
                          const CCTK_REAL *restrict const A, const ptrdiff_t ldA)
 {
@@ -68,31 +74,28 @@ static CCTK_REAL dmatuse(const ptrdiff_t m, const ptrdiff_t n,
 
 
 
-void PAPI_dgemm(CCTK_ARGUMENTS)
+static void run_dgemm(const ptrdiff_t N)
 {
-  DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
   
+#pragma omp barrier
   const double t0 = get_time();
-  
-  const ptrdiff_t N = dgemm_N;
-  
-  CCTK_VInfo(CCTK_THORNSTRING,
-             "Running local DGEMM benchmark with N=%td...", N);
   
   CCTK_REAL *restrict const A = malloc(N*N * sizeof *A);
   CCTK_REAL *restrict const B = malloc(N*N * sizeof *B);
   CCTK_REAL *restrict const C = malloc(N*N * sizeof *C);
   
-  srand(time(NULL));
   dmatgen(N,N, A,N);
   dmatgen(N,N, B,N);
   dmatgen(N,N, C,N);
   
   const double t1 = get_time();
+#pragma omp barrier
   dgemm(N,N,N, A,N, B,N, C,N);
+#pragma omp barrier
   const double t2 = get_time();
-  const double Gflop = 2.0*N*N*N / 1.0e+9;
+  const int num_threads = omp_get_num_threads();
+  const double Gflop = num_threads * 2.0*N*N*N / 1.0e+9;
   
   const volatile CCTK_REAL s CCTK_ATTRIBUTE_UNUSED = dmatuse(N,N, C,N);
   
@@ -100,16 +103,43 @@ void PAPI_dgemm(CCTK_ARGUMENTS)
   free(B);
   free(C);
   
+#pragma omp barrier
   const double t3 = get_time();
   
   const double Gflop_sec_pure    = Gflop / (t2 - t1);
   const double Gflop_sec_overall = Gflop / (t3 - t0);
   
+#pragma omp master
+  {
+    CCTK_VInfo(CCTK_THORNSTRING,
+               "Floating point operations: %g Gflop over %d threads",
+               Gflop, num_threads);
+    CCTK_VInfo(CCTK_THORNSTRING,
+               "Pure performance:          %g Gflop/sec", Gflop_sec_pure);
+    CCTK_VInfo(CCTK_THORNSTRING,
+               "Overall performance:       %g Gflop/sec", Gflop_sec_overall);
+  }
+}
+
+
+
+void PAPI_dgemm(CCTK_ARGUMENTS)
+{
+  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_PARAMETERS;
+  
+  const ptrdiff_t N = dgemm_N;
+  
   CCTK_VInfo(CCTK_THORNSTRING,
-             "Floating point operations:    %g Gflop", Gflop);
+             "Running local single-threaded DGEMM benchmark with N=%td...", N);
+  run_dgemm(N);
+  
   CCTK_VInfo(CCTK_THORNSTRING,
-             "Pure single-core performance: %g Gflop/sec", Gflop_sec_pure);
-  CCTK_VInfo(CCTK_THORNSTRING,
-             "Overall performance:          %g Gflop/sec", Gflop_sec_overall);
-  CCTK_INFO("NOTE: These numbers do not have to be large, but they need to agree with what PAPI reports");
+             "Running local multi-threaded DGEMM benchmark with N=%td...", N);
+#pragma omp parallel
+  {
+    run_dgemm(N);
+  }
+  
+  CCTK_INFO("NOTE: These performance numbers do not have to be large, but they need to agree with what PAPI reports");
 }

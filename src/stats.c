@@ -10,7 +10,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef _OPENMP
+#  include <omp.h>
+#else
+static int omp_get_max_threads(void) { return 1; }
+static int omp_get_thread_num(void) { return 0; }
+#endif
+
 #include <papi.h>
+
+#include "stats.h"
+
 
 
 // For backward compatibility
@@ -28,28 +38,52 @@ static int PAPI_add_named_event(int EventSet, char *EventName)
 }
 #endif
 
+
+
 ////////////////////////////////////////////////////////////////////////////////
 
 
 
-// User-defined event sets
-#define num_eventsets 5
-static const char *restrict const eventset_names[num_eventsets] = {
-  "flops", "ipc", "icache", "dcache", "memory",
-};
-static int eventsets[num_eventsets];
+void outinfo(const char *const function)
+{
+  DECLARE_CCTK_PARAMETERS;
+  if (verbose) {
+#pragma omp master
+    {
+      printf("[%s]\n", function);
+    }
+  }
+}
 
-// The event set we are using
-static int eventset_index = -1;
-// The PAPI component of this event set
+// Check for an error, and output an error message if there was one
+void chkerr(const int ierr, const char *const function, ...)
+{
+  if (ierr<0) {
+#pragma omp critical
+    {
+      va_list ap;
+      va_start(ap, function);
+      printf("ERROR %d [%s] in ", ierr, PAPI_strerror(ierr));
+      vprintf(function, ap);
+      printf("\n");
+      va_end(ap);
+    }
+  }
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+int num_threads;
+int *restrict eventsets = NULL;
+int num_events;
+int *restrict events;
+
+// The PAPI component of these eventsets
 static int component = -1;
-// Number of events in this event set
-static int num_events = -1;
-// Events in this event set
-static int *restrict events = NULL;
-// Event index of PAPI_FP_OPS and PAPI_DP_OPS
-static int fp_ops_index = -1;
-static int dp_ops_index = -1;
 
 
 
@@ -58,18 +92,24 @@ static int dp_ops_index = -1;
 
 
 // Remember timer values when PAPI counters were last reset
-static long long last_cyc = -1, last_nsec = -1;
+static long long *restrict last_nsec = NULL;
+static long long *restrict last_cyc  = NULL;
 
 
 
-#if 0
+#if defined __linux__
+
 // This is recommended for Linux, but e.g. doesn't work on OSX
 #include <pthread.h>
 static unsigned long thread_id(void)
 {
-  return pthread_self();
+  const pthread_t tid = pthread_self();
+  unsigned long ret;
+  memcpy(&ret, &tid, sizeof ret);
+  return ret;
 }
-#endif
+
+#elif defined _OPENMP
 
 // This works only if no threads are created/destroyed
 // (if the number of threads doesn't change)
@@ -79,31 +119,15 @@ static unsigned long thread_id(void)
   return omp_get_thread_num();
 }
 
+#else
 
-
-// Output a a debug message
-static void outinfo(const char *const function)
+// Don't know how to obtain a thread id
+static unsigned long thread_id(void)
 {
-  DECLARE_CCTK_PARAMETERS;
-  if (verbose) {
-    printf("[%s]\n", function);
-  }
+  return 0;
 }
 
-// Check for an error, and output an error message if there was one
-static void chkerr(const int ierr, const char *const function, ...)
-  CCTK_ATTRIBUTE_FORMAT(printf, 2, 3);
-static void chkerr(const int ierr, const char *const function, ...)
-{
-  if (ierr<0) {
-    va_list ap;
-    va_start(ap, function);
-    printf("ERROR %d [%s] in ", ierr, PAPI_strerror(ierr));
-    vprintf(function, ap);
-    printf("\n");
-    va_end(ap);
-  }
-}
+#endif
 
 
 
@@ -116,6 +140,11 @@ void PAPI_init(CCTK_ARGUMENTS)
   
   CCTK_INFO("Initialising PAPI");
   
+  // OpenMP
+  
+  assert(per_thread_statistics);
+  num_threads = omp_get_max_threads();
+  
   // Initialise PAPI
   
   outinfo("PAPI_library_init");
@@ -127,6 +156,20 @@ void PAPI_init(CCTK_ARGUMENTS)
   
   if (per_thread_statistics) {
     outinfo("PAPI_thread_init");
+    // NOTE: Our implementation of thread_id probably cannot handle
+    // changes in the number of threads. That is, omp_set_num_threads
+    // should not be called after this point.
+    
+#if 0
+    // Ensure all threads are created
+    // (This is necessary for Intel's OpenMP.)
+    volatile int dummy = 0;
+#pragma omp parallel reduction(+: dummy)
+    {
+      dummy += 1;
+    }
+#endif
+    
     ierr = PAPI_thread_init(thread_id);
     chkerr(ierr, "PAPI_thread_init");
   }
@@ -177,74 +220,94 @@ void PAPI_init(CCTK_ARGUMENTS)
     printf("There are %d PAPI counters\n", num_counters);
   }
   
-  // Translate user event names to event sets
+  // Translate user event names to an eventset
   
-  const char *const eventset_eventnames[num_eventsets] = {
-    events_flops, events_ipc, events_icache, events_dcache, events_memory,
-  };
+  eventsets = malloc(num_threads * sizeof *eventsets);
+  assert(eventsets);
   
-  for (int n=0; n<num_eventsets; ++n) {
-    if (verbose) {
-      printf("Creating event set %s:\n", eventset_names[n]);
-    }
+#pragma omp parallel private(ierr)
+  {
+    const int thread_num = omp_get_thread_num();
+    
     outinfo("PAPI_create_eventset");
-    eventsets[n] = PAPI_NULL;
-    ierr = PAPI_create_eventset(&eventsets[n]);
+    eventsets[thread_num] = PAPI_NULL;
+    ierr = PAPI_create_eventset(&eventsets[thread_num]);
     chkerr(ierr, "PAPI_create_eventset");
     outinfo("PAPI_assign_eventset_component");
-    ierr = PAPI_assign_eventset_component(eventsets[n], component);
+    ierr = PAPI_assign_eventset_component(eventsets[thread_num], component);
     chkerr(ierr, "PAPI_assign_eventset_component");
     if (use_multiplexing) {
       outinfo("PAPI_set_multiplex");
-      ierr = PAPI_set_multiplex(eventsets[n]);
+      ierr = PAPI_set_multiplex(eventsets[thread_num]);
       chkerr(ierr, "PAPI_set_multiplex");
     }
     
-    char *const eventnames = strdup(eventset_eventnames[n]);
-    const char *const sep = ", ";
-    char *lasts;
-    for (char *event_name = strtok_r(eventnames, sep, &lasts);
-         event_name;
-         event_name = strtok_r(NULL, sep, &lasts))
-    {
+    // User-defined event sets
+    const int num_eventsets = 5;
+    const char *restrict const eventset_descriptions[] = {
+      "flops", "ipc", "icache", "dcache", "memory",
+    };
+    assert(sizeof eventset_descriptions / sizeof *eventset_descriptions ==
+           num_eventsets);
+    const char *const eventset_eventnames[] = {
+      events_flops, events_ipc, events_icache, events_dcache, events_memory,
+    };
+    assert(sizeof eventset_eventnames / sizeof *eventset_eventnames ==
+           num_eventsets);
+    
+    for (int n=0; n<num_eventsets; ++n) {
+#pragma omp master
       if (verbose) {
-        printf("   event %s\n", event_name);
+        printf("Adding eventset %s:\n", eventset_descriptions[n]);
       }
-      outinfo("PAPI_add_named_event");
-      ierr = PAPI_add_named_event(eventsets[n], event_name);
-      chkerr(ierr, "PAPI_add_named_event[%s]", event_name);
+      
+      char *const eventnames = strdup(eventset_eventnames[n]);
+      const char *const sep = ", ";
+      char *lasts;
+      for (char *event_name = strtok_r(eventnames, sep, &lasts);
+           event_name;
+           event_name = strtok_r(NULL, sep, &lasts))
+      {
+#pragma omp master
+        if (verbose) {
+          printf("   event %s\n", event_name);
+        }
+        outinfo("PAPI_add_named_event");
+        ierr = PAPI_add_named_event(eventsets[thread_num], event_name);
+        chkerr(ierr, "PAPI_add_named_event[%s]", event_name);
+      }
+      free(eventnames);
     }
-    free(eventnames);
-  }
-  
-  eventset_index = 0;
-  if (verbose) {
-    printf("Using PAPI event set %s\n", eventset_names[eventset_index]);
   }
   
   outinfo("PAPI_num_events");
-  num_events = ierr = PAPI_num_events(eventsets[eventset_index]);
+  num_events = ierr = PAPI_num_events(eventsets[0]);
   chkerr(ierr, "PAPI_num_events");
   if (ierr<0) num_events = 0;
   
   outinfo("PAPI_list_events");
   events = malloc(num_events * sizeof *events);
-  ierr = PAPI_list_events(eventsets[eventset_index], events, &num_events);
+  ierr = PAPI_list_events(eventsets[0], events, &num_events);
   chkerr(ierr, "PAPI_list_events");
   
-  for (int i=0; i<num_events; ++i) {
-    if (events[i] == PAPI_FP_OPS) fp_ops_index = i;
-    if (events[i] == PAPI_DP_OPS) dp_ops_index = i;
+  last_nsec = malloc(num_threads * sizeof *last_nsec);
+  assert(last_nsec);
+  last_cyc = malloc(num_threads * sizeof *last_cyc);
+  assert(last_cyc);
+  
+#pragma omp parallel private(ierr)
+  {
+    const int thread_num = omp_get_thread_num();
+    
+    outinfo("PAPI_start");
+    ierr = PAPI_start(eventsets[thread_num]);
+    chkerr(ierr, "PAPI_start");
+    
+    outinfo("PAPI_get_real_nsec");
+    last_nsec[thread_num] = PAPI_get_real_nsec();
+    outinfo("PAPI_get_real_cyc");
+    last_cyc[thread_num] = PAPI_get_real_cyc();
   }
-  
-  outinfo("PAPI_start");
-  ierr = PAPI_start(eventsets[eventset_index]);
-  chkerr(ierr, "PAPI_start");
-  
-  outinfo("PAPI_get_real_cyc");
-  last_cyc = PAPI_get_real_cyc();
-  outinfo("PAPI_get_real_nsec");
-  last_nsec = PAPI_get_real_nsec();
 }
 
 
@@ -258,23 +321,42 @@ static void output_stats(CCTK_ARGUMENTS)
   
   CCTK_INFO("PAPI Statistics:");
   
-  outinfo("PAPI_get_real_nsec");
-  const long long nsec = PAPI_get_real_nsec();
-  
-  outinfo("PAPI_read_ts");
-  long long cyc;
+  long long elapsed_nsec = 0;
+  long long elapsed_cyc  = 0;
   long long values[num_events];
-  ierr = PAPI_read_ts(eventsets[eventset_index], values, &cyc);
-  chkerr(ierr, "PAPI_read_ts");
-  if (ierr<0) cyc = PAPI_get_real_cyc();
+  for (int i=0; i<num_events; ++i) {
+    values[i] = 0;
+  }
+#pragma omp parallel private(ierr)
+  {
+    const int thread_num = omp_get_thread_num();
+    
+    outinfo("PAPI_get_real_nsec");
+    const long long my_nsec = PAPI_get_real_nsec();
+    
+    outinfo("PAPI_read_ts");
+    long long my_cyc;
+    long long my_values[num_events];
+    ierr = PAPI_read_ts(eventsets[thread_num], my_values, &my_cyc);
+    chkerr(ierr, "PAPI_read_ts");
+    
+    const long long my_elapsed_nsec = my_nsec - last_nsec[thread_num];
+    const long long my_elapsed_cyc  = my_cyc  - last_cyc[thread_num];
+    last_nsec[thread_num] = my_nsec;
+    last_cyc[thread_num]  = my_cyc;
+    
+#pragma omp critical(PAPI_output_stats_add)
+    {
+      elapsed_nsec += my_elapsed_nsec;
+      elapsed_cyc  += my_elapsed_cyc;
+      for (int i=0; i<num_events; ++i) {
+        values[i] += my_values[i];
+      }
+    }
+  }
   
-  const long long elapsed_nsec = nsec - last_nsec;
-  const long long elapsed_cyc = cyc - last_cyc;
-  last_nsec = nsec;
-  last_cyc = cyc;
-  
-  printf("   time              %20.9f sec\n", elapsed_nsec / 1.0e+9);
-  printf("   cycles            %20.9f Gcyc\n", elapsed_cyc / 1.0e+9);
+  printf("   CPU time          %20.9f sec\n", elapsed_nsec / 1.0e+9);
+  printf("   CPU cycles        %20.9f Gcyc\n", elapsed_cyc / 1.0e+9);
   for (int i=0; i<num_events; ++i) {
     outinfo("PAPI_event_code_to_name");
     char eventname[PAPI_MAX_STR_LEN];
@@ -308,170 +390,4 @@ void PAPI_output_stats_terminate(CCTK_ARGUMENTS)
   if (out_every > 0) return;
   
   output_stats(CCTK_PASS_CTOC);
-}
-
-
-
-////////////////////////////////////////////////////////////////////////////////
-
-
-
-static const char *const clock_name = "PAPI";
-
-typedef long long papi_counter_t;
-typedef struct {
-  papi_counter_t nsec, cyc, fp_ops, dp_ops;
-} papi_counters_t;
-typedef struct {
-  papi_counters_t accum, snapshot;
-  bool running;
-} papi_clock_t;
-static const int num_clock_vals =
-  sizeof(papi_counters_t) / sizeof(papi_counter_t);
-
-static void clock_get_papi_counters(papi_counters_t *restrict const counters)
-{
-  int ierr;
-  const long long nsec = PAPI_get_real_nsec();
-  long long cyc;
-  long long values[num_events];
-  ierr = PAPI_read_ts(eventsets[eventset_index], values, &cyc);
-  // chkerr(ierr, "PAPI_read_ts");
-  if (ierr<0) cyc = PAPI_get_real_cyc();
-  const long long fp_ops = fp_ops_index>=0 ? values[fp_ops_index] : 0;
-  const long long dp_ops = dp_ops_index>=0 ? values[dp_ops_index] : 0;
-  counters->nsec   = nsec;
-  counters->cyc    = cyc;
-  counters->fp_ops = fp_ops;
-  counters->dp_ops = dp_ops;
-}
-
-
-
-static void *clock_create(const int timernum)
-{
-  papi_clock_t *restrict const data = malloc(sizeof(papi_clock_t));
-  assert(data);
-  data->accum.nsec   = 0;
-  data->accum.cyc    = 0;
-  data->accum.fp_ops = 0;
-  data->accum.dp_ops = 0;
-  data->running = false;
-  return data;
-}
-
-static void clock_destroy(const int timernum, void *restrict const data)
-{
-  free(data);
-}
-
-static void clock_start(const int timernum, void *restrict const data_)
-{
-  papi_clock_t *restrict const data = data_;
-  assert(!data->running);
-  clock_get_papi_counters(&data->snapshot);
-  data->running = true;
-}
-
-static void clock_stop(const int timernum, void *restrict const data_)
-{
-  papi_clock_t *restrict const data = data_;
-  // Apparently clocks can be created in a "running" state?
-  if (!data->running) return;
-  assert(data->running);
-  papi_counters_t current;
-  clock_get_papi_counters(&current);
-  data->running = false;
-  data->accum.nsec   += current.nsec   - data->snapshot.nsec;
-  data->accum.cyc    += current.cyc    - data->snapshot.cyc;
-  data->accum.fp_ops += current.fp_ops - data->snapshot.fp_ops;
-  data->accum.dp_ops += current.dp_ops - data->snapshot.dp_ops;
-}
-
-static void clock_reset(const int timernum, void *restrict const data_)
-{
-  papi_clock_t *restrict const data = data_;
-  data->accum.nsec   = 0;
-  data->accum.cyc    = 0;
-  data->accum.fp_ops = 0;
-  data->accum.dp_ops = 0;
-}
-
-static void clock_get(const int timernum,
-                      void *restrict const data_,
-                      cTimerVal *restrict const vals)
-{
-  papi_clock_t *restrict const data = data_;
-  
-  vals[0].type       = val_double;
-  vals[0].heading    = "PAPI_time";
-  vals[0].units      = "sec";
-  vals[0].val.d      = data->accum.nsec / 1.0e+9;
-  vals[0].seconds    = data->accum.nsec / 1.0e+9;
-  vals[0].resolution = 1.0e-9;
-  
-  vals[1].type       = val_double;
-  vals[1].heading    = "PAPI_cycles";
-  vals[1].units      = "Gcyc";
-  vals[1].val.d      = data->accum.cyc / 1.0e+9;
-  vals[1].seconds    = data->accum.cyc / 1.0e+9;
-  vals[1].resolution = 1.0e-9;
-  
-  vals[2].type       = val_double;
-  vals[2].heading    = "PAPI_flop";
-  vals[2].units      = "Gflop";
-  vals[2].val.d      = data->accum.fp_ops / 1.0e+9;
-  vals[2].seconds    = data->accum.fp_ops / 1.0e+9;
-  vals[2].resolution = 1.0e-9;
-  
-  vals[3].type       = val_double;
-  vals[3].heading    = "PAPI_dp_flop";
-  vals[3].units      = "Gflop";
-  vals[3].val.d      = data->accum.dp_ops / 1.0e+9;
-  vals[3].seconds    = data->accum.dp_ops / 1.0e+9;
-  vals[3].resolution = 1.0e-9;
-}
-
-static void clock_set(const int timernum,
-                      void *restrict const data_,
-                      cTimerVal *restrict const vals)
-{
-  papi_clock_t *restrict const data = data_;
-  
-  assert(vals[0].type == val_double);
-  data->accum.nsec = llrint(vals[0].val.d * 1.0e+9);
-  
-  assert(vals[1].type == val_double);
-  data->accum.cyc = llrint(vals[1].val.d * 1.0e+9);
-  
-  assert(vals[2].type == val_double);
-  data->accum.fp_ops = llrint(vals[2].val.d * 1.0e+9);
-  
-  assert(vals[3].type == val_double);
-  data->accum.dp_ops = llrint(vals[3].val.d * 1.0e+9);
-}
-
-
-
-void PAPI_register_clock(CCTK_ARGUMENTS)
-{
-  DECLARE_CCTK_ARGUMENTS;
-  
-  CCTK_INFO("PAPI_register_clock");
-  
-  int ierr;
-  
-  cClockFuncs funcs;
-  funcs.name    = clock_name;
-  funcs.n_vals  = num_clock_vals;
-  funcs.create  = clock_create;
-  funcs.destroy = clock_destroy;
-  funcs.start   = clock_start;
-  funcs.stop    = clock_stop;
-  funcs.reset   = clock_reset;
-  funcs.get     = clock_get;
-  funcs.set     = clock_set;
-  funcs.seconds = NULL;
-  ierr = CCTK_ClockRegister(clock_name, &funcs);
-  assert(ierr>=0);
 }
