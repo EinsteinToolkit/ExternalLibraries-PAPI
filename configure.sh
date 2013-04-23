@@ -40,17 +40,17 @@ if [ -z "${PAPI_DIR}" ]; then
                     fi
                 done
                 # don't look further if all files have been found
-                if [ -n "$HDF5_DIR" ]; then
+                if [ -n "$PAPI_DIR" ]; then
                     break
                 fi
             done
             # don't look further if all files have been found
-            if [ -n "$HDF5_DIR" ]; then
+            if [ -n "$PAPI_DIR" ]; then
                 break
             fi
         done
         # don't look further if all files have been found
-        if [ -n "$HDF5_DIR" ]; then
+        if [ -n "$PAPI_DIR" ]; then
             break
         fi
     done
