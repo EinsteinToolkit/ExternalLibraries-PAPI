@@ -24,7 +24,7 @@ INT out_every "Output statistics every so many iterations" STEERABLE=always
 STRING events_flops "PAPI events for flop/sec" STEERABLE=recover
 {
   "" :: ""
-} "PAPI_FP_OPS PAPI_DP_OPS PAPI_VEC_DP PAPI_TOT_CYC PAPI_REF_CYC"
+} "PAPI_FP_OPS PAPI_DP_OPS PAPI_VEC_DP PAPI_TOT_CYC PAPI_REF_CYC SIMD_FP_256:PACKED_DOUBLE"
 
 STRING events_ipc "PAPI events for instructions/cycle" STEERABLE=recover
 {
@@ -50,5 +50,5 @@ STRING events_memory "PAPI evens for memory accesses" STEERABLE=recover
 
 INT dgemm_N "Matrix size; mem = 32 N^2 bytes, cpu = 2 N^3 flop"
 {
-  1:* :: "N=2000 requires 128 Mbyte and 16 Gflop (per CPU); N=5000 requires 800 Mbyte and 250 Gflop (per process)"
-} 2000
+  1:* :: "N=2000 requires 128 Mbyte and 16 Gflop; N=5000 requires 800 Mbyte and 250 Gflop"
+} 1000
