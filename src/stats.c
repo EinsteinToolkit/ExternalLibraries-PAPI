@@ -156,6 +156,9 @@ void PAPI_init(CCTK_ARGUMENTS)
   
   if (per_thread_statistics) {
     outinfo("PAPI_thread_init");
+    // TODO: Investigate PAPI_INHERIT -- but this may work only with
+    // recent version of PAPI and/or Linux
+    
     // NOTE: Our implementation of thread_id probably cannot handle
     // changes in the number of threads. That is, omp_set_num_threads
     // should not be called after this point.
