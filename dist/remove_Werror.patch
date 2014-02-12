@@ -1,0 +1,27 @@
+diff -ru papi-5.1.0.orig/src/libpfm4/config.mk papi-5.1.0/src/libpfm4/config.mk
+--- papi-5.1.0.orig/src/libpfm4/config.mk	2013-01-15 12:44:43.000000000 -0800
++++ papi-5.1.0/src/libpfm4/config.mk	2013-10-24 14:14:24.839326449 -0700
+@@ -179,19 +179,20 @@
+ # -Wextra: to enable extra compiler sanity checks (e.g., signed vs. unsigned)
+ # -Wno-unused-parameter: to avoid warnings on unused foo(void *this) parameter
+ #
+-DBG?=-g -Wall -Werror -Wextra -Wno-unused-parameter
++DBG?=-g -Wall -Wextra -Wno-unused-parameter
+ 
+ ifeq ($(SYS),Darwin)
+ # older gcc-4.2 does not like -Wextra and some of our initialization code
+ # Xcode uses a gcc version which is too old for some static initializers
+ CC=clang
+-DBG?=-g -Wall -Werror
++DBG?=-g -Wall
+ LDCONFIG=true
+ endif
+ 
+ ifeq ($(SYS),FreeBSD)
+ # gcc-4.2 does not like -Wextra and some of our initialization code
+-DBG=-g -Wall -Werror
++# gcc-4.8.1 does not like -Werror and some of libpfm4's code
++DBG=-g -Wall
+ endif
+ 
+ CFLAGS+=$(OPTIM) $(DBG) -I$(SYSINCDIR) -I$(PFMINCDIR)

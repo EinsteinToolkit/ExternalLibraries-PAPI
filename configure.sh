@@ -130,6 +130,24 @@ then
         echo "PAPI: Unpacking archive..."
         pushd ${BUILD_DIR}
         ${TAR?} xzf ${SRCDIR}/dist/${TARNAME}.tar.gz
+
+        echo "PAPI: Applying patches..."
+        pushd ${NAME}
+        ${PATCH?} -p1 < ${SRCDIR}/dist/remove_Werror.patch
+        # Some (ancient but still used) versions of patch don't support the
+        # patch format used here but also don't report an error using the
+        # exit code. So we use this patch to test for this
+        ${PATCH?} -p0 < ${SRCDIR}/dist/patchtest.patch
+        if [ ! -e .patch_tmp ]; then
+            echo 'BEGIN ERROR'
+            echo 'The version of patch is too old to understand this patch format.'
+            echo 'Please set the PATCH environment variable to a more recent '
+            echo 'version of the patch command.'
+            echo 'END ERROR'
+            exit 1
+        fi
+        rm -f .patch_tmp
+        popd
         
         echo "PAPI: Configuring..."
         cd ${NAME}/src
