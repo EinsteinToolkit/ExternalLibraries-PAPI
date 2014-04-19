@@ -81,8 +81,8 @@ then
     
     # Set locations
     THORN=PAPI
-    NAME=papi-5.1.0
-    TARNAME=papi-5.1.0.2
+    NAME=papi-5.2.0
+    TARNAME=papi-5.2.0
     SRCDIR=$(dirname $0)
     BUILD_DIR=${SCRATCH_BUILD}/build/${THORN}
     if [ -z "${PAPI_INSTALL_DIR}" ]; then
@@ -117,6 +117,7 @@ then
         cd ${SCRATCH_BUILD}
         
         # Set up environment
+        unset CPP
         unset LIBS
         if echo '' ${ARFLAGS} | grep 64 > /dev/null 2>&1; then
             export OBJECT_MODE=64
