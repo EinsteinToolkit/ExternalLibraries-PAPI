@@ -1,1 +1,11 @@
 ActiveThorns = "PAPI"
+
+ActiveThorns = "CartGrid3D CoordBase IOBasic IOUtil LocalReduce PUGH PUGHReduce SymBase"
+
+IO::out_dir       = $parfile
+IO::out_every     = 1
+IO::out_fileinfo  = "none"
+IO::parfile_write = "no"
+
+IOBasic::outScalar_vars       = "grid::r"
+IOBasic::outScalar_reductions = "average"
