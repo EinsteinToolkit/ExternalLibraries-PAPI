@@ -81,10 +81,10 @@ then
     
     # Set locations
     THORN=PAPI
-    NAME=papi-5.2.0
-    TARNAME=papi-5.2.0
-    #NAME=papi-5.3.0
-    #TARNAME=papi-5.3.0
+    # NAME=papi-5.2.0
+    # TARNAME=papi-5.2.0
+    NAME=papi-5.3.0
+    TARNAME=papi-5.3.0
     SRCDIR=$(dirname $0)
     BUILD_DIR=${SCRATCH_BUILD}/build/${THORN}
     if [ -z "${PAPI_INSTALL_DIR}" ]; then
