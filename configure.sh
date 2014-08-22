@@ -81,8 +81,6 @@ then
     
     # Set locations
     THORN=PAPI
-    # NAME=papi-5.2.0
-    # TARNAME=papi-5.2.0
     NAME=papi-5.3.0
     TARNAME=papi-5.3.0
     SRCDIR=$(dirname $0)
@@ -121,6 +119,7 @@ then
         # Set up environment
         unset CPP
         unset LIBS
+        export MPICC=:          # disable MPI tests
         if echo '' ${ARFLAGS} | grep 64 > /dev/null 2>&1; then
             export OBJECT_MODE=64
         fi
@@ -136,20 +135,8 @@ then
         
         echo "PAPI: Applying patches..."
         pushd ${NAME}
-        ${PATCH?} -p1 < ${SRCDIR}/dist/remove_Werror.patch
-        # Some (ancient but still used) versions of patch don't support the
-        # patch format used here but also don't report an error using the
-        # exit code. So we use this patch to test for this
-        ${PATCH?} -p0 < ${SRCDIR}/dist/patchtest.patch
-        if [ ! -e .patch_tmp ]; then
-            echo 'BEGIN ERROR'
-            echo 'The version of patch is too old to understand this patch format.'
-            echo 'Please set the PATCH environment variable to a more recent '
-            echo 'version of the patch command.'
-            echo 'END ERROR'
-            exit 1
-        fi
-        rm -f .patch_tmp
+        # Replace <malloc.h> by <stdlib.h>
+        find . -type f -print | xargs perl -pi -e 's/malloc.h/stdlib.h/'
         popd
         
         echo "PAPI: Configuring..."
