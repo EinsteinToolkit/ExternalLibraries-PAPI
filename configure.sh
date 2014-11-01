@@ -83,7 +83,7 @@ then
     THORN=PAPI
     NAME=papi-5.3.0
     TARNAME=papi-5.3.0
-    SRCDIR=$(dirname $0)
+    SRCDIR="$(dirname $0)"
     BUILD_DIR=${SCRATCH_BUILD}/build/${THORN}
     if [ -z "${PAPI_INSTALL_DIR}" ]; then
         INSTALL_DIR=${SCRATCH_BUILD}/external/${THORN}
@@ -191,17 +191,19 @@ fi
 ################################################################################
 
 # Set options
-PAPI_INC_DIRS=${PAPI_DIR}/include
-PAPI_LIB_DIRS=${PAPI_DIR}/lib
+PAPI_INC_DIRS="${PAPI_DIR}/include"
+PAPI_LIB_DIRS="${PAPI_DIR}/lib"
 PAPI_LIBS="papi"
 
 if nm ${PAPI_LIB_DIRS}/libpapi.a | grep -q pm_initialize; then
     PAPI_LIBS="${PAPI_LIBS} pmapi"
 fi
 
+PAPI_INC_DIRS="$(${CCTK_HOME}/lib/sbin/strip-incdirs.sh ${PAPI_INC_DIRS})"
+PAPI_LIB_DIRS="$(${CCTK_HOME}/lib/sbin/strip-libdirs.sh ${PAPI_LIB_DIRS})"
+
 # Pass options to Cactus
 echo "BEGIN MAKE_DEFINITION"
-echo "HAVE_PAPI     = 1"
 echo "PAPI_DIR      = ${PAPI_DIR}"
 echo "PAPI_INC_DIRS = ${PAPI_INC_DIRS}"
 echo "PAPI_LIB_DIRS = ${PAPI_LIB_DIRS}"
