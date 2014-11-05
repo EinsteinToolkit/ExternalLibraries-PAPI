@@ -137,6 +137,8 @@ then
         pushd ${NAME}
         # Replace <malloc.h> by <stdlib.h>
         find . -type f -print | xargs perl -pi -e 's/malloc.h/stdlib.h/'
+        # disable Werror since new compiler warns about PAPI
+        find . -name config.mk -print | xargs perl -pi -e 's/-Werror//g'
         popd
         
         echo "PAPI: Configuring..."
