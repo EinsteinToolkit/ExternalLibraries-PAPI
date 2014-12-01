@@ -95,95 +95,11 @@ then
     fi
     DONE_FILE=${SCRATCH_BUILD}/done/${THORN}
     PAPI_DIR=${INSTALL_DIR}
-    
-    if [ -e ${DONE_FILE} -a ${DONE_FILE} -nt ${SRCDIR}/dist/${TARNAME}.tar.gz \
-                         -a ${DONE_FILE} -nt ${SRCDIR}/configure.sh ]
-    then
-        echo "BEGIN MESSAGE"
-        echo "PAPI has already been built; doing nothing"
-        echo "END MESSAGE"
-    else
-        echo "BEGIN MESSAGE"
-        echo "Building PAPI"
-        echo "END MESSAGE"
-        
-        # Build in a subshell
-        (
-        exec >&2                    # Redirect stdout to stderr
-        if [ "$(echo ${VERBOSE} | tr '[:upper:]' '[:lower:]')" = 'yes' ]; then
-            set -x                  # Output commands
-        fi
-        set -e                      # Abort on errors
-        cd ${SCRATCH_BUILD}
-        
-        # Set up environment
-        unset CPP
-        unset LIBS
-        export MPICC=:          # disable MPI tests
-        if echo '' ${ARFLAGS} | grep 64 > /dev/null 2>&1; then
-            export OBJECT_MODE=64
-        fi
-        
-        echo "PAPI: Preparing directory structure..."
-        mkdir build external done 2> /dev/null || true
-        rm -rf ${BUILD_DIR} ${INSTALL_DIR}
-        mkdir ${BUILD_DIR} ${INSTALL_DIR}
-        
-        echo "PAPI: Unpacking archive..."
-        pushd ${BUILD_DIR}
-        ${TAR?} xzf ${SRCDIR}/dist/${TARNAME}.tar.gz
-        
-        echo "PAPI: Applying patches..."
-        pushd ${NAME}
-        # Replace <malloc.h> by <stdlib.h>
-        find . -type f -print | xargs perl -pi -e 's/malloc.h/stdlib.h/'
-        # disable Werror since new compiler warns about PAPI
-        find . -name config.mk -print | xargs perl -pi -e 's/-Werror//g'
-        popd
-        
-        echo "PAPI: Configuring..."
-        cd ${NAME}/src
-        # CC          C compiler command
-        # CFLAGS      C compiler flags
-        # LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
-        #             nonstandard directory <lib dir>
-        # CPPFLAGS    C/C++ preprocessor flags, e.g. -I<include dir> if you have
-        #             headers in a nonstandard directory <include dir>
-        # F77         Fortran 77 compiler command
-        # FFLAGS      Fortran 77 compiler flags
-        # CPP         C preprocessor
-        #unset CC
-        #unset CFLAGS
-        #unset LDFLAGS
-        #unset CPPFLAGS
-        #unset F77
-        #unset FFLAGS
-        #unset CPP
-        #export MPICC=
-
-        ./configure --prefix=${PAPI_DIR} --with-shared-lib=no
-        
-        echo "PAPI: Building..."
-        ${MAKE}
-        
-        echo "PAPI: Installing..."
-        ${MAKE} install
-        popd
-        
-        echo "PAPI: Cleaning up..."
-        rm -rf ${BUILD_DIR}
-        
-        date > ${DONE_FILE}
-        echo "PAPI: Done."
-        )
-        if (( $? )); then
-            echo 'BEGIN ERROR'
-            echo 'Error while building PAPI. Aborting.'
-            echo 'END ERROR'
-            exit 1
-        fi
-    fi
-    
+else    
+    THORN=PAPI
+    DONE_FILE=${SCRATCH_BUILD}/done/${THORN}
+    mkdir ${SCRATCH_BUILD}/done 2> /dev/null || true
+    date > ${DONE_FILE}
 fi
 
 
@@ -191,6 +107,11 @@ fi
 ################################################################################
 # Configure Cactus
 ################################################################################
+
+# Pass configuration options to build script
+echo "BEGIN MAKE_DEFINITION"
+echo "PAPI_INSTALL_DIR = ${PAPI_INSTALL_DIR}"
+echo "END MAKE_DEFINITION"
 
 # Set options
 PAPI_INC_DIRS="${PAPI_DIR}/include"

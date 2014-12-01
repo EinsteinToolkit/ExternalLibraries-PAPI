@@ -2,7 +2,7 @@
 
 PROVIDES PAPI
 {
-  SCRIPT configure.sh
+  SCRIPT src/detect.sh
   LANG bash
   OPTIONS PAPI_DIR PAPI_INSTALL_DIR
 }
