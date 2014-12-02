@@ -118,7 +118,7 @@ PAPI_INC_DIRS="${PAPI_DIR}/include"
 PAPI_LIB_DIRS="${PAPI_DIR}/lib"
 PAPI_LIBS="papi"
 
-if nm ${PAPI_LIB_DIRS}/libpapi.a | grep -q pm_initialize; then
+if nm ${PAPI_LIB_DIRS}/libpapi.a 2>/dev/null | grep -q pm_initialize; then
     PAPI_LIBS="${PAPI_LIBS} pmapi"
 fi
 
