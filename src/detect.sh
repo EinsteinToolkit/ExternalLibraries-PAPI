@@ -66,6 +66,8 @@ if [ -z "${PAPI_DIR}" ]; then
     fi
 fi
 
+THORN=PAPI
+
 
 
 ################################################################################
@@ -80,7 +82,6 @@ then
     echo "END MESSAGE"
     
     # Set locations
-    THORN=PAPI
     NAME=papi-5.3.0
     TARNAME=papi-5.3.0
     SRCDIR="$(dirname $0)"
@@ -93,10 +94,10 @@ then
         echo "END MESSAGE"
         INSTALL_DIR=${PAPI_INSTALL_DIR}
     fi
-    DONE_FILE=${SCRATCH_BUILD}/done/${THORN}
+    PAPI_BUILD=1
     PAPI_DIR=${INSTALL_DIR}
 else    
-    THORN=PAPI
+    PAPI_BUILD=
     DONE_FILE=${SCRATCH_BUILD}/done/${THORN}
     if [ ! -e ${DONE_FILE} ]; then
         mkdir ${SCRATCH_BUILD}/done 2> /dev/null || true
@@ -112,6 +113,7 @@ fi
 
 # Pass configuration options to build script
 echo "BEGIN MAKE_DEFINITION"
+echo "PAPI_BUILD       = ${PAPI_BUILD}"
 echo "PAPI_INSTALL_DIR = ${PAPI_INSTALL_DIR}"
 echo "END MAKE_DEFINITION"
 
