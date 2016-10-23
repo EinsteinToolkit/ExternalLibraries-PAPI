@@ -93,7 +93,7 @@ static void *clock_create(const int timernum) {
 }
 
 static void clock_destroy(const int timernum, void *restrict const data_) {
-  papi_clock_t *restrict const data = malloc(sizeof *data);
+  papi_clock_t *restrict const data = data_;
   assert(data);
   free(data->accum);
   free(data->snapshot);
