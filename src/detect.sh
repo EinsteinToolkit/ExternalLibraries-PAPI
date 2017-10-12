@@ -27,7 +27,7 @@ if [ -z "${PAPI_DIR}" ]; then
         # libraries might have different file extensions
         for libext in a dll dll.a dylib lib so; do
             # libraries can be in lib or lib64 (or libx32?)
-            for libdir in lib64 lib; do
+            for libdir in lib64 lib  lib/x86_64-linux-gnu; do
                 # These files must exist
                 FILES="include/papi.h ${libdir}/libpapi.${libext}"
                 # assume this is the one and check all needed files
