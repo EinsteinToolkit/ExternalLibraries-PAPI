@@ -75,6 +75,11 @@ cd ${NAME}/src
 #unset CPP
 #export MPICC=
 
+# get rid of NAME variables in make since PAPI's Makefile uses it as well
+unset NAME
+# disable parallel build since PAPI does not support it
+MAKEFLAGS=${MAKEFLAGS%% -- *}
+
 ./configure --prefix=${PAPI_DIR} --with-shared-lib=no
 
 echo "PAPI: Building..."
