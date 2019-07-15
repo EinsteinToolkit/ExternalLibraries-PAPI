@@ -83,7 +83,7 @@ MAKEFLAGS=${MAKEFLAGS%% -- *}
 ./configure --prefix=${PAPI_DIR} --with-shared-lib=no
 
 echo "PAPI: Building..."
-${MAKE}
+${MAKE} $(pwd)/libpfm4/lib/libpfm.a static
 
 echo "PAPI: Installing..."
 ${MAKE} install
