@@ -82,8 +82,9 @@ MAKEFLAGS=${MAKEFLAGS%% -- *}
 
 ./configure --prefix=${PAPI_DIR} --with-shared-lib=no
 
+# disable building and running the tests since they may fail and we don't care
 echo "PAPI: Building..."
-${MAKE} $(pwd)/libpfm4/lib/libpfm.a static
+${MAKE} TESTS=
 
 echo "PAPI: Installing..."
 ${MAKE} install
