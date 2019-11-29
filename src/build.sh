@@ -53,6 +53,20 @@ pushd ${NAME}
 find . -type f -print | xargs perl -pi -e 's/malloc.h/stdlib.h/'
 # disable Werror since new compiler warns about PAPI
 find . -name config.mk -print | xargs perl -pi -e 's/-Werror//g'
+${PATCH?} -p1 < ${SRCDIR}/../dist/F77_COMMON_NAME.patch
+# Some (ancient but still used) versions of patch don't support the
+# patch format used here but also don't report an error using the exit
+# code. So we use this patch to test for this
+${PATCH?} -p1 < ${SRCDIR}/../dist/patchtest.patch
+if [ ! -e .patch_tmp ]; then
+    echo 'BEGIN ERROR'
+    echo 'The version of patch is too old to understand this patch format.'
+    echo 'Please set the PATCH environment variable to a more recent '
+    echo 'version of the patch command.'
+    echo 'END ERROR'
+    exit 1
+fi
+rm -f .patch_tmp
 popd
 
 echo "PAPI: Configuring..."
