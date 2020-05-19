@@ -186,6 +186,7 @@ void PAPI_init(CCTK_ARGUMENTS) {
     printf("Using PAPI component %d\n", component);
   }
 
+#if PAPI_VERSION_MAJOR(PAPI_VER_CURRENT) < 6
   outinfo("PAPI_num_counters");
   int num_counters = ierr = PAPI_num_counters();
   chkerr(ierr, "PAPI_num_counters");
@@ -194,6 +195,7 @@ void PAPI_init(CCTK_ARGUMENTS) {
   if (verbose) {
     printf("There are %d PAPI counters\n", num_counters);
   }
+#endif
 
   // Translate user event names to an eventset
 
