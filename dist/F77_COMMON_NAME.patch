@@ -1,7 +1,7 @@
-diff -ur papi-5.3.0.orig/src/configure papi-5.3.0/src/configure
---- papi-5.3.0.orig/src/configure	2013-12-02 10:16:17.000000000 -0600
-+++ papi-5.3.0/src/configure	2018-08-05 18:54:09.262611716 -0500
-@@ -2467,6 +2467,20 @@
+diff -ru papi-6.0.0.1.orig/src/configure papi-6.0.0.1/src/configure
+--- papi-6.0.0.1.orig/src/configure	2020-04-03 03:07:00.000000000 -0500
++++ papi-6.0.0.1/src/configure	2020-07-12 15:38:12.346963979 -0500
+@@ -3374,6 +3374,20 @@
  	CC_COMMON_NAME="unknown"
  fi
  
@@ -22,7 +22,7 @@ diff -ur papi-5.3.0.orig/src/configure papi-5.3.0/src/configure
  #prevent icc warnings about overriding optimization settings set by AC_PROG_CC
  # remark #869: parameter was never referenced
  # remark #271: trailing comma is nonstandard
-@@ -2477,7 +2491,7 @@
+@@ -3384,7 +3398,7 @@
    fi
  fi
  
@@ -31,7 +31,7 @@ diff -ur papi-5.3.0.orig/src/configure papi-5.3.0/src/configure
    F77="$F77 -mmic -fPIC"
  fi
  
-@@ -7522,11 +7536,11 @@
+@@ -6653,11 +6667,11 @@
  
  
  
@@ -43,7 +43,6 @@ diff -ur papi-5.3.0.orig/src/configure papi-5.3.0/src/configure
    FFLAGS="$FFLAGS -warn all"
 -elif test "$F77" != "xlf"; then
 +elif test "$F77_COMMON_NAME" != "xlf"; then
-   FFLAGS="$FFLAGS -Wall -ffixed-line-length-132"
+   FFLAGS="$FFLAGS -ffixed-line-length-132"
  fi
  
-Only in papi-5.3.0/src: configure~
