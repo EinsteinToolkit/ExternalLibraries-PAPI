@@ -1,0 +1,21 @@
+diff -ur papi-6.0.0.1.orig/src/threads.c papi-6.0.0.1/src/threads.c
+--- papi-6.0.0.1.orig/src/threads.c	2020-04-03 03:07:00.000000000 -0500
++++ papi-6.0.0.1/src/threads.c	2020-08-28 08:51:45.000000000 -0500
+@@ -598,7 +598,7 @@
+ }
+ 
+ #if defined(__NR_gettid) && !defined(HAVE_GETTID)
+-  #include <syscall.h>
++  #include <sys/syscall.h>
+   #include <unistd.h>
+   unsigned long _papi_gettid(void)
+   {
+@@ -611,7 +611,7 @@
+     return (unsigned long)(gettid());
+   }
+ #elif defined(HAVE_SYSCALL_GETTID)
+-  #include <syscall.h>
++  #include <sys/syscall.h>
+   #include <sys/types.h>
+   unsigned long _papi_gettid(void)
+   {
