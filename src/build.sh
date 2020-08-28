@@ -54,6 +54,8 @@ find . -type f -print | xargs perl -pi -e 's/malloc.h/stdlib.h/'
 # disable Werror since new compiler warns about PAPI
 find . -name config.mk -print | xargs perl -pi -e 's/-Werror//g'
 ${PATCH?} -p1 < ${SRCDIR}/../dist/F77_COMMON_NAME.patch
+${PATCH?} -p1 < ${SRCDIR}/../dist/create_timer.patch
+${PATCH?} -p1 < ${SRCDIR}/../dist/syscall.patch
 # Some (ancient but still used) versions of patch don't support the
 # patch format used here but also don't report an error using the exit
 # code. So we use this patch to test for this
