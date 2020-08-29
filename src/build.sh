@@ -96,6 +96,9 @@ unset NAME
 # disable parallel build since PAPI does not support it
 MAKEFLAGS=${MAKEFLAGS%% -- *}
 
+# need OpenMP support in LDFLAGS, PAPI uses CC to link, so:
+export LDFLAGS="$CFLAGS $LDFLAGS"
+
 ./configure --prefix=${PAPI_DIR} --with-shared-lib=no
 
 # disable building and running the tests since they may fail and we don't care
