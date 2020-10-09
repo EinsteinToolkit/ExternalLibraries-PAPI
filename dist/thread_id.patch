@@ -1,0 +1,45 @@
+diff -ur papi-6.0.0.1.orig/src/papi_internal.c papi-6.0.0.1/src/papi_internal.c
+--- papi-6.0.0.1.orig/src/papi_internal.c	2020-10-09 14:28:25.300010771 -0700
++++ papi-6.0.0.1/src/papi_internal.c	2020-10-09 14:29:41.291509192 -0700
+@@ -117,25 +117,25 @@
+ 
+ void
+ _papi_hwi_set_papi_event_code (unsigned int event_code, int update_flag) {
+-	INTDBG("new event_code: %#x, update_flag: %d, previous event_code: %#x\n", event_code, update_flag, _papi_hwi_my_thread->tls_papi_event_code);
++	INTDBG("new event_code: %#x, update_flag: %d, previous event_code: %#x\n", event_code, update_flag, _papi_hwi_lookup_thread(0)->tls_papi_event_code);
+ 
+ 	// if call is just to reset and start over, set both flags to show nothing saved yet
+ 	if (update_flag < 0) {
+-		_papi_hwi_my_thread->tls_papi_event_code_changed = -1;
+-		_papi_hwi_my_thread->tls_papi_event_code = -1;
++		_papi_hwi_lookup_thread(0)->tls_papi_event_code_changed = -1;
++		_papi_hwi_lookup_thread(0)->tls_papi_event_code = -1;
+ 		return;
+ 	}
+ 
+ 	// if 0, it is being set prior to calling a component, if >0 it is being changed by the component
+-	_papi_hwi_my_thread->tls_papi_event_code_changed = update_flag;
++	_papi_hwi_lookup_thread(0)->tls_papi_event_code_changed = update_flag;
+ 	// save the event code passed in
+-	_papi_hwi_my_thread->tls_papi_event_code = event_code;
++	_papi_hwi_lookup_thread(0)->tls_papi_event_code = event_code;
+ 	return;
+ }
+ unsigned int
+ _papi_hwi_get_papi_event_code () {
+-	INTDBG("papi_event_code: %#x\n", _papi_hwi_my_thread->tls_papi_event_code);
+-	return _papi_hwi_my_thread->tls_papi_event_code;
++	INTDBG("papi_event_code: %#x\n", _papi_hwi_lookup_thread(0)->tls_papi_event_code);
++	return _papi_hwi_lookup_thread(0)->tls_papi_event_code;
+ }
+ /* Get the index into the ESI->NativeInfoArray for the current PAPI event code */
+ int
+@@ -560,7 +560,7 @@
+ 
+   int result;
+ 
+-  if (_papi_hwi_my_thread->tls_papi_event_code_changed > 0) {
++  if (_papi_hwi_lookup_thread(0)->tls_papi_event_code_changed > 0) {
+ 	  result = _papi_hwi_get_papi_event_code();
+ 	  INTDBG("EXIT: papi_event_code: %#x set by the component\n", result);
+ 	  return result;
