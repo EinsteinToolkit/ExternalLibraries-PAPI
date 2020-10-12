@@ -57,6 +57,7 @@ ${PATCH?} -p1 < ${SRCDIR}/../dist/F77_COMMON_NAME.patch
 ${PATCH?} -p1 < ${SRCDIR}/../dist/create_timer.patch
 ${PATCH?} -p1 < ${SRCDIR}/../dist/syscall.patch
 ${PATCH?} -p1 < ${SRCDIR}/../dist/thread_id.patch
+${PATCH?} -p1 < ${SRCDIR}/../dist/component.patch
 ${PATCH?} -p1 < ${SRCDIR}/../dist/configure_flags.patch
 # Some (ancient but still used) versions of patch don't support the
 # patch format used here but also don't report an error using the exit

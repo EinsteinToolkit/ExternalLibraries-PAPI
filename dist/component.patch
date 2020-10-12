@@ -1,0 +1,60 @@
+diff -ur papi-6.0.0.1.orig/src/papi.c papi-6.0.0.1/src/papi.c
+--- papi-6.0.0.1.orig/src/papi.c	2020-04-03 03:07:00.000000000 -0500
++++ papi-6.0.0.1/src/papi.c	2020-10-11 21:21:49.000000000 -0500
+@@ -1697,7 +1697,7 @@
+ 	char *evt_name;
+ 
+ 	cidx = _papi_hwi_component_index( *EventCode );
+-	if (cidx < 0) return PAPI_ENOCMP;
++	if (_papi_hwi_invalid_cmp(cidx)) return PAPI_ENOCMP;
+ 
+ 	/* Do we handle presets in componets other than CPU? */
+ 	/* if (( IS_PRESET(i) ) && cidx > 0 )) return PAPI_ENOCMP; */
+diff -ur papi-6.0.0.1.orig/src/papi_internal.c papi-6.0.0.1/src/papi_internal.c
+--- papi-6.0.0.1.orig/src/papi_internal.c	2020-04-03 03:07:00.000000000 -0500
++++ papi-6.0.0.1/src/papi_internal.c	2020-10-11 21:19:35.000000000 -0500
+@@ -1173,7 +1173,7 @@
+    int cidx;
+ 
+    cidx = _papi_hwi_component_index( nevt );
+-   if (cidx<0) return PAPI_ENOCMP;
++   if (_papi_hwi_invalid_cmp(cidx)) return PAPI_ENOCMP;
+ 
+    max_counters = _papi_hwd[cidx]->cmp_info.num_mpx_cntrs;
+ 
+@@ -1341,7 +1341,7 @@
+ 
+ 	/* Sanity check the component */
+ 	cidx=_papi_hwi_component_index( EventCode );
+-	if (cidx<0) {
++	if (_papi_hwi_invalid_cmp(cidx)) {
+ 		return PAPI_ENOCMP;
+ 	}
+ 	if (_papi_hwd[cidx]->cmp_info.disabled) {
+@@ -2412,7 +2412,7 @@
+    int nevt_code;
+ 
+    cidx = _papi_hwi_component_index( EventCode );
+-   if (cidx<0) {
++   if (_papi_hwi_invalid_cmp(cidx)) {
+ 	   INTDBG("EXIT: PAPI_ENOCMP\n");
+ 	   return PAPI_ENOCMP;
+    }
+@@ -2543,7 +2543,7 @@
+   int nevt_code;
+ 
+   cidx = _papi_hwi_component_index( EventCode );
+-  if (cidx<0) return PAPI_ENOEVNT;
++  if (_papi_hwi_invalid_cmp(cidx)) return PAPI_ENOEVNT;
+ 
+   if ( EventCode & PAPI_NATIVE_MASK ) {
+ 	  // save event code so components can get it with call to: _papi_hwi_get_papi_event_code()
+@@ -2581,7 +2581,7 @@
+     int nevt_code;
+ 
+     cidx = _papi_hwi_component_index( EventCode );
+-    if (cidx<0) return PAPI_ENOCMP;
++    if (_papi_hwi_invalid_cmp(cidx)) return PAPI_ENOCMP;
+ 
+     if (_papi_hwd[cidx]->cmp_info.disabled) return PAPI_ENOCMP;
+ 

@@ -1,13 +1,25 @@
 diff -ur papi-6.0.0.1.orig/src/configure papi-6.0.0.1/src/configure
 --- papi-6.0.0.1.orig/src/configure	2020-10-09 14:48:45.152936700 -0700
 +++ papi-6.0.0.1/src/configure	2020-10-09 15:01:06.371010615 -0700
-@@ -4987,9 +4987,6 @@
+@@ -4987,9 +4987,9 @@
  SAVED_LIBS=$LIBS
  SAVED_LDFLAGS=$LDFLAGS
  SAVED_CFLAGS=$CFLAGS
 -LIBS=""
 -LDFLAGS=""
 -CFLAGS="-pthread"
++LIBS="$LIBS"
++LDFLAGS="$LDFLAGS"
++CFLAGS="$CFLAGS -pthread"
  
  
  # Check whether --with-tls was given.
+@@ -6642,7 +6642,7 @@
+   CPUCOMPONENT_NAME=darwin
+   CPUCOMPONENT=linux-generic.c
+   CPUCOMPONENT=linux-generic.obj
+-  CFLAGS="-DNEED_FFSLL"
++  CFLAGS="$CFLAGS -DNEED_FFSLL"
+   CC_SHR='$(CC) -fPIC -DPIC -shared -Wl,-dylib -Xlinker "-rpath" -Xlinker "$(LIBDIR)"'
+   SHLIB=libpapi.dylib
+ elif test "$MAKEVER" = "generic_platform"; then
