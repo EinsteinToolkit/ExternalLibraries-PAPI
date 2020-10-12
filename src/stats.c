@@ -181,10 +181,16 @@ void PAPI_init(CCTK_ARGUMENTS) {
     }
   }
 
-  component = 0;
-  if (verbose) {
-    printf("Using PAPI component %d\n", component);
-  }
+  if(num_components > 0) {
+    component = 0;
+    if (verbose) {
+      printf("Using PAPI component %d\n", component);
+    }
+  } else {
+    if (verbose) {
+      printf("No PAPI component to use\n");
+    }
+  } 
 
 #if PAPI_VERSION_MAJOR(PAPI_VER_CURRENT) < 6
   outinfo("PAPI_num_counters");
@@ -210,9 +216,11 @@ void PAPI_init(CCTK_ARGUMENTS) {
     eventsets[thread_num] = PAPI_NULL;
     ierr = PAPI_create_eventset(&eventsets[thread_num]);
     chkerr(ierr, "PAPI_create_eventset");
-    outinfo("PAPI_assign_eventset_component");
-    ierr = PAPI_assign_eventset_component(eventsets[thread_num], component);
-    chkerr(ierr, "PAPI_assign_eventset_component");
+    if(num_components > 0) {
+      outinfo("PAPI_assign_eventset_component");
+      ierr = PAPI_assign_eventset_component(eventsets[thread_num], component);
+      chkerr(ierr, "PAPI_assign_eventset_component");
+    }
     if (use_multiplexing) {
       outinfo("PAPI_set_multiplex");
       ierr = PAPI_set_multiplex(eventsets[thread_num]);
