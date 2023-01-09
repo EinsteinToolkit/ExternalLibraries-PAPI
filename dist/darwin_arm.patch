@@ -1,0 +1,83 @@
+diff -ur papi-7.0.0.orig/src/components/sysdetect/Rules.sysdetect papi-7.0.0/src/components/sysdetect/Rules.sysdetect
+--- papi-7.0.0.orig/src/components/sysdetect/Rules.sysdetect	2022-11-14 11:44:02
++++ papi-7.0.0/src/components/sysdetect/Rules.sysdetect	2023-01-09 13:52:40
+@@ -3,8 +3,7 @@
+ 			components/sysdetect/amd_gpu.c    \
+ 			components/sysdetect/cpu.c        \
+ 			components/sysdetect/cpu_utils.c  \
+-			components/sysdetect/os_cpu_utils.c    \
+-			components/sysdetect/linux_cpu_utils.c
++			components/sysdetect/os_cpu_utils.c
+ 
+ 
+ COMPOBJS += sysdetect.o  \
+@@ -12,8 +11,12 @@
+ 			amd_gpu.o    \
+ 			cpu.o        \
+ 			cpu_utils.o  \
+-			os_cpu_utils.o    \
+-			linux_cpu_utils.o
++			os_cpu_utils.o
++
++ifeq ($(TARGET_OS), linux)
++COMPSRCS += components/sysdetect/linux_cpu_utils.c
++COMPOBJS += linux_cpu_utils.o
++endif
+ 
+ CFLAGS += -I$(PAPI_ROCM_ROOT)/hsa/include              \
+           -I$(PAPI_ROCM_ROOT)/hsa/include/hsa          \
+diff -ur papi-7.0.0.orig/src/configure papi-7.0.0/src/configure
+--- papi-7.0.0.orig/src/configure	2022-11-14 11:44:31
++++ papi-7.0.0/src/configure	2023-01-09 13:43:26
+@@ -4783,9 +4783,12 @@
+ 	       darwin)
+                    family=`uname -m`
+ 
+-                   MISCSRCS="$MISCSRCS x86_cpuid_info.c"
+-
+-		   ;;
++		   if test "$family" = "amd64"; then
++                      MISCSRCS="$MISCSRCS x86_cpuid_info.c"
++		      CPU="x86"
++		   elif test "${family:0:3}" = "arm" || test "$family" = "aarch64"; then
++		      CPU="arm"
++		   fi ;;
+ 
+                linux)
+                    family=`uname -m`
+diff -ur papi-7.0.0.orig/src/darwin-common.c papi-7.0.0/src/darwin-common.c
+--- papi-7.0.0.orig/src/darwin-common.c	2022-11-14 11:44:02
++++ papi-7.0.0/src/darwin-common.c	2023-01-09 13:40:19
+@@ -20,7 +20,9 @@
+ #include "darwin-memory.h"
+ #include "darwin-common.h"
+ 
++#if !defined(__aarch64__)
+ #include "x86_cpuid_info.h"
++#endif
+ 
+ PAPI_os_info_t _papi_os_info;
+ 
+@@ -353,6 +355,8 @@
+ 		( ret ) = ( ( long long ) a ) | ( ( ( long long ) d ) << 32 );
+ 	}
+ 	while ( 0 );
++#elif defined(__aarch64__)
++	__asm__ __volatile__ ("isb; mrs %0, cntvct_el0" : "=r" (ret));
+ #else
+ 	__asm__ __volatile__( "rdtsc":"=A"( ret ): );
+ #endif
+--- papi-7.0.0.orig/src/darwin-memory.c	2023-01-09 14:36:21
++++ papi-7.0.0/src/darwin-memory.c	2022-11-14 11:44:02
+@@ -67,7 +67,11 @@
+ 	( void ) cpu_type;		 /*unused */
+ 	int retval = PAPI_OK;
+ 
++#if defined(__i386__)||defined(__x86_64__)
+ 	x86_get_memory_info( hwinfo );
++#else
++	#warning "WARNING! darwin_get_memory_info() does nothing on non x86!"
++#endif
+ 
+ 	return retval;
+ }

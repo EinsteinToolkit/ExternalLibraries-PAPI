@@ -59,6 +59,9 @@ ${PATCH?} -p1 < ${SRCDIR}/../dist/syscall.patch
 ${PATCH?} -p1 < ${SRCDIR}/../dist/thread_id.patch
 ${PATCH?} -p1 < ${SRCDIR}/../dist/component.patch
 ${PATCH?} -p1 < ${SRCDIR}/../dist/configure_flags.patch
+${PATCH?} -p1 < ${SRCDIR}/../dist/darwin_arm.patch
+${PATCH?} -p1 < ${SRCDIR}/../dist/soname.patch
+${PATCH?} -p1 < ${SRCDIR}/../dist/libsde.patch
 # Some (ancient but still used) versions of patch don't support the
 # patch format used here but also don't report an error using the exit
 # code. So we use this patch to test for this
