@@ -21,7 +21,7 @@ if [ -z "${PAPI_DIR}" ]; then
     echo "PAPI selected, but PAPI_DIR not set. Checking some places..."
     echo "END MESSAGE"
     
-    DIRS="/usr /usr/local /opt/local ${HOME}"
+    DIRS="/usr /usr/local /opt/local /opt/homebrew ${HOME}"
     # look into each directory
     for dir in $DIRS; do
         # libraries might have different file extensions
