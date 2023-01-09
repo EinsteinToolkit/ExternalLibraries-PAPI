@@ -1,13 +1,13 @@
-diff -ur papi-6.0.0.1.orig/src/configure papi-6.0.0.1/src/configure
---- papi-6.0.0.1.orig/src/configure	2020-04-03 03:07:00.000000000 -0500
-+++ papi-6.0.0.1/src/configure	2020-08-28 08:46:33.000000000 -0500
-@@ -4301,7 +4315,8 @@
+diff -ur papi-7.0.0.orig/src/configure papi-7.0.0/src/configure
+--- papi-7.0.0.orig/src/configure	2022-11-14 11:44:31
++++ papi-7.0.0/src/configure	2023-01-09 13:22:24
+@@ -4454,7 +4454,8 @@
  $as_echo "found" >&6; }
- 	LRT="-lrt"
- 	else
--		as_fn_error $? "cannot find timer_create and timer_*ettime symbols neither in the base system libraries nor in -lrt" "$LINENO" 5
-+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+                         LRT="-lrt -lpthread"
+                 else
+-			as_fn_error $? "cannot find timer_create and timer_*ettime symbols neither in the base system libraries nor in -lrt, nor in -lrt -lpthread" "$LINENO" 5
++			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
 +$as_echo "not found" >&6; }
+ 		fi
  	fi
  fi
- 

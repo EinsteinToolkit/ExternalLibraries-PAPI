@@ -14,8 +14,8 @@ set -e                          # Abort on errors
 
 # Set locations
 THORN=PAPI
-NAME=papi-6.0.0.1
-TARNAME=papi-6.0.0.1
+NAME=papi-7.0.0
+TARNAME=papi-7.0.0
 SRCDIR="$(dirname $0)"
 BUILD_DIR=${SCRATCH_BUILD}/build/${THORN}
 if [ -z "${PAPI_INSTALL_DIR}" ]; then
