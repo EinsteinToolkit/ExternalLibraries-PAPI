@@ -1,0 +1,208 @@
+diff -ur papi-7.0.0.orig/src/Makefile.in papi-7.0.0/src/Makefile.in
+--- papi-7.0.0.orig/src/Makefile.in	2022-11-14 11:44:31
++++ papi-7.0.0/src/Makefile.in	2023-01-09 14:18:49
+@@ -95,6 +95,12 @@
+ MIC = @MIC@
+ BUILD_LIBSDE_SHARED = @BUILD_LIBSDE_SHARED@
+ BUILD_LIBSDE_STATIC = @BUILD_LIBSDE_STATIC@
++export SONAME
++ifeq ($(TARGET_OS), linux)
++SONAME=-soname
++else
++SONAME=-install_name
++endif
+ 
+ include $(FILENAME)
+ 
+diff -ur papi-7.0.0.orig/src/configure papi-7.0.0/src/configure
+--- papi-7.0.0.orig/src/configure	2022-11-14 11:44:31
++++ papi-7.0.0/src/configure	2023-01-09 14:16:58
+@@ -6599,7 +6602,7 @@
+ VLIB='libpapi.so.$(PAPISOVER)'
+ OMPCFLGS=-fopenmp
+ CC_R='$(CC) -pthread'
+-CC_SHR='$(CC) -fPIC -DPIC -shared -Wl,-soname -Wl,$(VLIB) -Xlinker "-rpath" -Xlinker "$(LIBDIR)"'
++CC_SHR='$(CC) -fPIC -DPIC -shared -Wl,$(SONAME) -Wl,$(VLIB) -Xlinker "-rpath" -Xlinker "$(LIBDIR)"'
+ if test "$CC_COMMON_NAME" = "gcc"; then
+ 	if test "$bitmode" = "32"; then
+ 		BITFLAGS=-m32
+@@ -6788,7 +6791,7 @@
+   SHLIB=libpapi.so
+   DESCR="Linux for BlueGene/P"
+   LIBS=static
+-  CC_SHR='$(CC) -shared -Xlinker "-soname" -Xlinker "$(SHLIB)" -Xlinker "-rpath" -Xlinker "$(LIBDIR)"'
++  CC_SHR='$(CC) -shared -Xlinker "$(SONAME)" -Xlinker "$(SHLIB)" -Xlinker "-rpath" -Xlinker "$(LIBDIR)"'
+   OMPCFLGS=""
+ 
+ elif test "$MAKEVER" = "bgq"; then
+@@ -6803,7 +6806,7 @@
+   TOPTFLAGS="-g -Wall -O0"
+   SHLIB=libpapi.so
+   DESCR="Linux for Blue Gene/Q"
+-  CC_SHR='$(CC) -fPIC -DPIC -shared -Wl,-soname -Wl,$(SHLIB) -Xlinker "-rpath" -Xlinker "$(LIBDIR)"'
++  CC_SHR='$(CC) -fPIC -DPIC -shared -Wl,$(SONAME) -Wl,$(SHLIB) -Xlinker "-rpath" -Xlinker "$(LIBDIR)"'
+   OMPCFLGS=""
+ 
+ elif test "$MAKEVER" = "CLE-perfmon2"; then
+@@ -6829,7 +6832,7 @@
+ re.c"
+   DESCR="FreeBSD -over libpmc- "
+   CFLAGS+=" -I. -Ifreebsd -DPIC -fPIC"
+-  CC_SHR='$(CC) -shared -Xlinker "-soname" -Xlinker "libpapi.so" -Xlinker "-rpath" -Xlinker "$(LIBDIR)" -DPIC -fPIC -I. -Ifreebsd'
++  CC_SHR='$(CC) -shared -Xlinker "$(SONAME)" -Xlinker "libpapi.so" -Xlinker "-rpath" -Xlinker "$(LIBDIR)" -DPIC -fPIC -I. -Ifreebsd'
+ 
+ elif test "$MAKEVER" = "linux-generic"; then
+     CPUCOMPONENT_NAME=linux-generic
+@@ -6905,7 +6908,7 @@
+     CFLAGS="$CFLAGS -DITANIUM$CPU"
+     FFLAGS="$FFLAGS -DITANIUM$CPU"
+ 
+-  CC_SHR='$(CC) -fPIC -DPIC -shared -Wl,-soname -Wl,$(SHLIB) -Xlinker "-rpath" -Xlinker "$(LIBDIR)"'
++  CC_SHR='$(CC) -fPIC -DPIC -shared -Wl,$(SONAME) -Wl,$(SHLIB) -Xlinker "-rpath" -Xlinker "$(LIBDIR)"'
+ 
+ elif test "$MAKEVER" = "solaris-ultra"; then
+     CPUCOMPONENT_NAME=solaris-ultra
+diff -ur papi-7.0.0.orig/src/configure.in papi-7.0.0/src/configure.in
+--- papi-7.0.0.orig/src/configure.in	2022-11-14 11:44:31
++++ papi-7.0.0/src/configure.in	2023-01-09 14:16:58
+@@ -1539,7 +1539,7 @@
+ VLIB='libpapi.so.$(PAPISOVER)'
+ OMPCFLGS=-fopenmp
+ CC_R='$(CC) -pthread'
+-CC_SHR='$(CC) -fPIC -DPIC -shared -Wl,-soname -Wl,$(VLIB) -Xlinker "-rpath" -Xlinker "$(LIBDIR)"'
++CC_SHR='$(CC) -fPIC -DPIC -shared -Wl,$(SONAME) -Wl,$(VLIB) -Xlinker "-rpath" -Xlinker "$(LIBDIR)"'
+ if test "$CC_COMMON_NAME" = "gcc"; then
+ 	if test "$bitmode" = "32"; then
+ 		BITFLAGS=-m32
+@@ -1687,7 +1687,7 @@
+   SHLIB=libpapi.so
+   DESCR="Linux for BlueGene/P"
+   LIBS=static
+-  CC_SHR='$(CC) -shared -Xlinker "-soname" -Xlinker "$(SHLIB)" -Xlinker "-rpath" -Xlinker "$(LIBDIR)"'
++  CC_SHR='$(CC) -shared -Xlinker "$(SONAME)" -Xlinker "$(SHLIB)" -Xlinker "-rpath" -Xlinker "$(LIBDIR)"'
+   OMPCFLGS=""
+ 
+ elif test "$MAKEVER" = "bgq"; then
+@@ -1702,7 +1702,7 @@
+   TOPTFLAGS="-g -Wall -O0"
+   SHLIB=libpapi.so
+   DESCR="Linux for Blue Gene/Q"
+-  CC_SHR='$(CC) -fPIC -DPIC -shared -Wl,-soname -Wl,$(SHLIB) -Xlinker "-rpath" -Xlinker "$(LIBDIR)"'
++  CC_SHR='$(CC) -fPIC -DPIC -shared -Wl,$(SONAME) -Wl,$(SHLIB) -Xlinker "-rpath" -Xlinker "$(LIBDIR)"'
+   OMPCFLGS=""
+ 
+ elif test "$MAKEVER" = "CLE-perfmon2"; then 
+@@ -1728,7 +1728,7 @@
+ re.c"
+   DESCR="FreeBSD -over libpmc- "
+   CFLAGS+=" -I. -Ifreebsd -DPIC -fPIC"
+-  CC_SHR='$(CC) -shared -Xlinker "-soname" -Xlinker "libpapi.so" -Xlinker "-rpath" -Xlinker "$(LIBDIR)" -DPIC -fPIC -I. -Ifreebsd'
++  CC_SHR='$(CC) -shared -Xlinker "$(SONAME)" -Xlinker "libpapi.so" -Xlinker "-rpath" -Xlinker "$(LIBDIR)" -DPIC -fPIC -I. -Ifreebsd'
+ 
+ elif test "$MAKEVER" = "linux-generic"; then
+     CPUCOMPONENT_NAME=linux-generic
+@@ -1804,7 +1804,7 @@
+     CFLAGS="$CFLAGS -DITANIUM$CPU"
+     FFLAGS="$FFLAGS -DITANIUM$CPU"
+ 
+-  CC_SHR='$(CC) -fPIC -DPIC -shared -Wl,-soname -Wl,$(SHLIB) -Xlinker "-rpath" -Xlinker "$(LIBDIR)"'
++  CC_SHR='$(CC) -fPIC -DPIC -shared -Wl,$(SONAME) -Wl,$(SHLIB) -Xlinker "-rpath" -Xlinker "$(LIBDIR)"'
+ 
+ elif test "$MAKEVER" = "solaris-ultra"; then
+     CPUCOMPONENT_NAME=solaris-ultra
+diff -ur papi-7.0.0.orig/src/libperfnec/lib/Makefile papi-7.0.0/src/libperfnec/lib/Makefile
+--- papi-7.0.0.orig/src/libperfnec/lib/Makefile	2022-11-14 11:44:03
++++ papi-7.0.0/src/libperfnec/lib/Makefile	2023-01-09 14:16:58
+@@ -52,7 +52,7 @@
+ 
+ 
+ ifeq ($(SYS),Linux)
+-SLDFLAGS=-shared -Wl,-soname -Wl,$(VLIBPFM)
++SLDFLAGS=-shared -Wl,$(SONAME) -Wl,$(VLIBPFM)
+ SLIBPFM=libpfm.so.$(VERSION).$(REVISION).$(AGE)
+ VLIBPFM=libpfm.so.$(VERSION)
+ SOLIBEXT=so
+diff -ur papi-7.0.0.orig/src/libperfnec/libpfms/lib/Makefile papi-7.0.0/src/libperfnec/libpfms/lib/Makefile
+--- papi-7.0.0.orig/src/libperfnec/libpfms/lib/Makefile	2022-11-14 11:44:03
++++ papi-7.0.0/src/libperfnec/libpfms/lib/Makefile	2023-01-09 14:16:58
+@@ -62,7 +62,7 @@
+ endif
+ 
+ ifeq ($(SYS),Linux)
+-SLDFLAGS=-shared -Wl,-soname -Wl,libpfms.so.$(VERSION)
++SLDFLAGS=-shared -Wl,$(SONAME) -Wl,libpfms.so.$(VERSION)
+ endif
+ 
+ CFLAGS+=-I$(PFMSINCDIR)
+diff -ur papi-7.0.0.orig/src/libpfm-3.y/lib/Makefile papi-7.0.0/src/libpfm-3.y/lib/Makefile
+--- papi-7.0.0.orig/src/libpfm-3.y/lib/Makefile	2022-11-14 11:44:04
++++ papi-7.0.0/src/libpfm-3.y/lib/Makefile	2023-01-09 14:16:58
+@@ -111,7 +111,7 @@
+ endif
+ 
+ ifeq ($(SYS),Linux)
+-SLDFLAGS=-shared -Wl,-soname -Wl,$(VLIBPFM)
++SLDFLAGS=-shared -Wl,$(SONAME) -Wl,$(VLIBPFM)
+ SLIBPFM=libpfm.so.$(VERSION).$(REVISION).$(AGE)
+ VLIBPFM=libpfm.so.$(VERSION)
+ SOLIBEXT=so
+diff -ur papi-7.0.0.orig/src/libpfm-3.y/libpfms/lib/Makefile papi-7.0.0/src/libpfm-3.y/libpfms/lib/Makefile
+--- papi-7.0.0.orig/src/libpfm-3.y/libpfms/lib/Makefile	2022-11-14 11:44:04
++++ papi-7.0.0/src/libpfm-3.y/libpfms/lib/Makefile	2023-01-09 14:16:58
+@@ -62,7 +62,7 @@
+ endif
+ 
+ ifeq ($(SYS),Linux)
+-SLDFLAGS=-shared -Wl,-soname -Wl,libpfms.so.$(VERSION)
++SLDFLAGS=-shared -Wl,$(SONAME) -Wl,libpfms.so.$(VERSION)
+ endif
+ 
+ CFLAGS+=-I$(PFMSINCDIR)
+diff -ur papi-7.0.0.orig/src/libpfm4/lib/Makefile papi-7.0.0/src/libpfm4/lib/Makefile
+--- papi-7.0.0.orig/src/libpfm4/lib/Makefile	2022-11-14 11:44:05
++++ papi-7.0.0/src/libpfm4/lib/Makefile	2023-01-09 14:16:58
+@@ -217,7 +217,7 @@
+ endif
+ 
+ ifeq ($(SYS),Linux)
+-SLDFLAGS=$(LDFLAGS) -shared -Wl,-soname -Wl,$(VLIBPFM)
++SLDFLAGS=$(LDFLAGS) -shared -Wl,$(SONAME) -Wl,$(VLIBPFM)
+ SLIBPFM=libpfm.so.$(VERSION).$(REVISION).$(AGE)
+ VLIBPFM=libpfm.so.$(VERSION)
+ SOLIBEXT=so
+diff -ur papi-7.0.0.orig/src/perfctr-2.6.x/usr.lib/Makefile papi-7.0.0/src/perfctr-2.6.x/usr.lib/Makefile
+--- papi-7.0.0.orig/src/perfctr-2.6.x/usr.lib/Makefile	2022-11-14 11:44:06
++++ papi-7.0.0/src/perfctr-2.6.x/usr.lib/Makefile	2023-01-09 14:16:58
+@@ -78,7 +78,7 @@
+ 	$(LD) -r -o $@ $(AR_OBJS)
+ 
+ libperfctr.so:	$(SO_OBJS)
+-	$(CC) -shared -o $@ -Wl,-soname,$(SO_NAME) $(SO_OBJS)
++	$(CC) -shared -o $@ -Wl,$(SONAME),$(SO_NAME) $(SO_OBJS)
+ 
+ $(AR_OBJS):	$(HDEP)
+ $(SO_OBJS):	$(HDEP)
+diff -ur papi-7.0.0.orig/src/perfctr-2.7.x/usr.lib/Makefile papi-7.0.0/src/perfctr-2.7.x/usr.lib/Makefile
+--- papi-7.0.0.orig/src/perfctr-2.7.x/usr.lib/Makefile	2022-11-14 11:44:07
++++ papi-7.0.0/src/perfctr-2.7.x/usr.lib/Makefile	2023-01-09 14:16:58
+@@ -73,7 +73,7 @@
+ 	$(RANLIB) libperfctr.a
+ 
+ libperfctr.so:	$(SO_OBJS)
+-	$(CC) -shared -o $@ -Wl,-soname,$(SO_NAME) $(SO_OBJS)
++	$(CC) -shared -o $@ -Wl,$(SONAME),$(SO_NAME) $(SO_OBJS)
+ 
+ $(AR_OBJS):	$(HDEP)
+ $(SO_OBJS):	$(HDEP)
+diff -ur papi-7.0.0.orig/src/sde_lib/Makefile papi-7.0.0/src/sde_lib/Makefile
+--- papi-7.0.0.orig/src/sde_lib/Makefile	2022-11-14 11:44:07
++++ papi-7.0.0/src/sde_lib/Makefile	2023-01-09 14:16:58
+@@ -14,7 +14,7 @@
+ all: dynamic static
+ 
+ dynamic: $(DOBJS)
+-	$(CC) -Bdynamic -fPIC -shared -Wl,-soname -Wl,libsde.so -fvisibility=hidden -Wextra -Wall -g -O2 $(DOBJS) -lrt -ldl -pthread -o libsde.so.1.0
++	$(CC) -Bdynamic -fPIC -shared -Wl,$(SONAME) -Wl,libsde.so -fvisibility=hidden -Wextra -Wall -g -O2 $(DOBJS) -lrt -ldl -pthread -o libsde.so.1.0
+ 	rm -f *_d.o
+ 
+ static: $(SOBJS)

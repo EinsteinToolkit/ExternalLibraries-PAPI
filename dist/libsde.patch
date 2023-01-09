@@ -1,0 +1,12 @@
+diff -ur papi-7.0.0.orig/src/sde_lib/Makefile papi-7.0.0/src/sde_lib/Makefile
+--- papi-7.0.0.orig/src/sde_lib/Makefile	2022-11-14 11:44:07
++++ papi-7.0.0/src/sde_lib/Makefile	2023-01-09 14:22:43
+@@ -14,7 +14,7 @@
+ all: dynamic static
+ 
+ dynamic: $(DOBJS)
+-	$(CC) -Bdynamic -fPIC -shared -Wl,$(SONAME) -Wl,libsde.so -fvisibility=hidden -Wextra -Wall -g -O2 $(DOBJS) -lrt -ldl -pthread -o libsde.so.1.0
++	$(CC) -Bdynamic -fPIC -shared -Wl,$(SONAME) -Wl,libsde.so -fvisibility=hidden -Wextra -Wall -g -O2 $(DOBJS) -ldl -pthread -o libsde.so.1.0
+ 	rm -f *_d.o
+ 
+ static: $(SOBJS)
