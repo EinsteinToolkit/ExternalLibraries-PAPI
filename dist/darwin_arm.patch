@@ -19,7 +19,7 @@ diff -ur papi-7.0.0.orig/src/components/sysdetect/Rules.sysdetect papi-7.0.0/src
 -			linux_cpu_utils.o
 +			os_cpu_utils.o
 +
-+ifeq ($(TARGET_OS), linux)
++ifeq ($(shell uname | tr [A-Z] [a-z]), linux)
 +COMPSRCS += components/sysdetect/linux_cpu_utils.c
 +COMPOBJS += linux_cpu_utils.o
 +endif

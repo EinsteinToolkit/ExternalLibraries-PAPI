@@ -6,10 +6,10 @@ diff -ur papi-7.0.0.orig/src/Makefile.in papi-7.0.0/src/Makefile.in
  BUILD_LIBSDE_SHARED = @BUILD_LIBSDE_SHARED@
  BUILD_LIBSDE_STATIC = @BUILD_LIBSDE_STATIC@
 +export SONAME
-+ifeq ($(TARGET_OS), linux)
-+SONAME=-soname
-+else
++ifeq ($(shell uname | tr [A-Z] [a-z]), darwin)
 +SONAME=-install_name
++else
++SONAME=-soname
 +endif
  
  include $(FILENAME)
