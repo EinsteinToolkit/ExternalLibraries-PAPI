@@ -36,7 +36,7 @@ diff -ur papi-7.0.0.orig/src/configure papi-7.0.0/src/configure
 -                   MISCSRCS="$MISCSRCS x86_cpuid_info.c"
 -
 -		   ;;
-+		   if test "$family" = "amd64"; then
++		   if test "$family" = "amd64" || test "$family" = "x86_64" ; then
 +                      MISCSRCS="$MISCSRCS x86_cpuid_info.c"
 +		      CPU="x86"
 +		   elif test "${family:0:3}" = "arm" || test "$family" = "aarch64"; then
